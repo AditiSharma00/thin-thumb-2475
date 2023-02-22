@@ -27,7 +27,7 @@ export default function Navbar() {
   const { isOpen, onToggle } = useDisclosure();
 
   return (
-    <Box>
+    <Box position={"fixed"}>
       <Flex
         bg={useColorModeValue("white", "red.500")}
         color={useColorModeValue("red.500", "white")}
@@ -38,6 +38,9 @@ export default function Navbar() {
         borderStyle={"solid"}
         borderColor={useColorModeValue("red.500", "red.500")}
         align={"center"}
+        position={"fixed"}
+        width="100%"
+        top="0"
       >
         <Flex
           flex={{ base: 1, md: "auto" }}
@@ -147,7 +150,6 @@ const DesktopNav = () => {
 
             {navItem.children && (
               <PopoverContent
-                border={"1px solid black"}
                 // border={0}
                 boxShadow={"xl"}
                 bg={popoverContentBgColor}
