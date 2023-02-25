@@ -12,9 +12,12 @@ import {
   PopoverTrigger,
   PopoverContent,
   useColorModeValue,
-  useBreakpointValue,
+  // useBreakpointValue, rew342
   useDisclosure,
   Img,
+  ButtonGroup,
+  PopoverHeader,
+  PopoverBody,
 } from "@chakra-ui/react";
 import {
   HamburgerIcon,
@@ -23,8 +26,40 @@ import {
   ChevronRightIcon,
 } from "@chakra-ui/icons";
 import { BiMap } from "react-icons/bi";
-export default function Navbar() {
+import { Link as NaviLink, Navigate, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { auth } from "../firebase";
+//import { AuthContext } from "../Contexts/AuthContextProvider";
+export default function Navbar(props) {
+  const [isOpeni, setIsOpen] = useState(false);
+  const onOpen = () => setIsOpen(true);
+  const onClose = () => setIsOpen(false);
+  // console.log(props.name);
   const { isOpen, onToggle } = useDisclosure();
+  // const { isOpen, onToggle } = useDisclosure();
+  const navigate = useNavigate();
+  // const toggle = () => setPopoverOpen(!popoverOpen);
+
+  // const { isAuth, currentUser, logout } = useContext(AuthContext);
+  const handleLogout = async () => {
+    await auth.signOut();
+    onClose();
+    await auth.signOut();
+    onClose();
+    alert("You have been logged out.");
+    navigate("/");
+  };
+  const handleDisplayNameClick = () => {
+    navigate("/");
+  };
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+    });
+    return unsubscribe;
+  }, []);
 
   return (
     <Box position={"fixed"}>
@@ -57,15 +92,16 @@ export default function Navbar() {
           />
         </Flex>
         <Flex flex={{ base: 1 }} justify={{ base: "center", md: "start" }}>
-          <Img
-            width={"50px"}
-            background-size={"cover"}
-            background-repeat={"no-repeat"}
-            src={
-              "https://d2wl1kt18tqdum.cloudfront.net/v2.1.2499-stageb/Assets/Theming/css/img/icon_circle-cfa-logo.svg"
-            }
-          />
-
+          <NaviLink to="/">
+            <Img
+              width={"50px"}
+              background-size={"cover"}
+              background-repeat={"no-repeat"}
+              src={
+                "https://d2wl1kt18tqdum.cloudfront.net/v2.1.2499-stageb/Assets/Theming/css/img/icon_circle-cfa-logo.svg"
+              }
+            />
+          </NaviLink>
           <Flex
             display={{ base: "block", md: "flex" }}
             mt={2}
@@ -88,16 +124,69 @@ export default function Navbar() {
           direction={"row"}
           spacing={30}
         >
-          <Button
-            as={"a"}
-            fontSize={"sm"}
-            fontWeight={700}
-            variant={"link"}
-            href={"#"}
-            color={"red.500"}
-          >
-            Chick fill A-one (sign In)
-          </Button>
+          <Popover isOpen={isOpeni} onClose={onClose}>
+            <PopoverTrigger>
+              <Button
+                onClick={onOpen}
+                fontWeight={600}
+                color={"white"}
+                bg={"red.500"}
+              >
+                User Details
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent>
+              {/* <PopoverHeader>Signup</PopoverHeader> */}
+              <PopoverBody>
+                {/* <ButtonGroup>
+                  <Button
+                    as={"a"}
+                    fontSize={"sm"}
+                    fontWeight={700}
+                    variant={"link"}
+                    // href={"#"}
+                    color={"red.500"}
+                    onClick={() => {
+                      navigate("/login");
+                    }}
+                  >
+                    {props.name
+                      ? `${props.name}`
+                      : " Chick fill A-one (sign In)"}
+                  </Button>
+                  <Button>Log out</Button>
+                </ButtonGroup> */}
+                <ButtonGroup>
+                  {user ? (
+                    <Button
+                      as="a"
+                      fontSize="sm"
+                      fontWeight={700}
+                      variant="link"
+                      color="red.500"
+                      onClick={handleDisplayNameClick}
+                    >
+                      {user.displayName}
+                    </Button>
+                  ) : (
+                    <Button
+                      as="a"
+                      onClick={() => {
+                        navigate("/login");
+                      }}
+                    >
+                      Log in
+                    </Button>
+                  )}
+                  {user && (
+                    <Button onClick={handleLogout} variant="outline">
+                      Log out
+                    </Button>
+                  )}
+                </ButtonGroup>
+              </PopoverBody>
+            </PopoverContent>
+          </Popover>
           <Button
             as={"a"}
             display={{ base: "none", md: "inline-flex" }}
@@ -109,6 +198,7 @@ export default function Navbar() {
             _hover={{
               bg: "red.500",
             }}
+            onClick={() => navigate("/cart")}
           >
             Order Food
           </Button>
@@ -133,19 +223,20 @@ const DesktopNav = () => {
         <Box key={navItem.label}>
           <Popover trigger={"hover"} placement={"bottom-start"}>
             <PopoverTrigger>
-              <Link
-                p={2}
-                href={navItem.href ?? "#"}
-                fontSize={"sm"}
-                fontWeight={700}
-                color={linkColor}
-                _hover={{
-                  textDecoration: "none",
-                  color: linkHoverColor,
-                }}
-              >
-                {navItem.label}
-              </Link>
+              <NaviLink to="/products">
+                <Box
+                  p={2}
+                  fontSize={"sm"}
+                  fontWeight={700}
+                  color={linkColor}
+                  _hover={{
+                    textDecoration: "none",
+                    color: linkHoverColor,
+                  }}
+                >
+                  {navItem.label}
+                </Box>
+              </NaviLink>
             </PopoverTrigger>
 
             {navItem.children && (
