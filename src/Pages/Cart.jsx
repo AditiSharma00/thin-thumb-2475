@@ -1,155 +1,130 @@
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Center,
-  Flex,
+  Grid,
+  GridItem,
   Heading,
   Image,
-  useBreakpointValue,
-  useToast,
+  Text,
+  Button,
+  Alert,
+  AlertIcon,
+  Flex,
 } from "@chakra-ui/react";
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  deleteTheDataFromCart,
-  getUsersCartData,
-  patchTheQuantityOfCart,
-  placeOrder,
-} from "../API/api";
-import CartContainer from "../Components/CartPageComponents/CartContainer";
-import CartTotal from "../Components/CartPageComponents/CartTotal";
-import { useAuth } from "../Contexts/AuthProvider";
-const Cart = () => {
-  const user = useAuth();
-  const [cartData, setCartData] = useState([]);
-  const [loader, setLoader] = useState(false);
-  const toast = useToast();
+import { Link } from "react-router-dom";
 
-  const navigate = useNavigate();
-  const [buttonLoading, setButtonLoading] = useState(false);
+const CartPage = () => {
+  const [cartItems, setCartItems] = useState([]);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [showAlert, setShowAlert] = useState(false);
+
   useEffect(() => {
-    handleEffect();
+    const items = JSON.parse(localStorage.getItem("cartItems")) || [];
+    setCartItems(items);
+    console.log(items);
   }, []);
 
-  const handleEffect = () => {
-    setLoader(true);
-    getUsersCartData(user)
-      .then((res) => setCartData(res.data))
-      .catch((err) => console.log(err))
-      .finally(() => setLoader(false));
+  useEffect(() => {
+    let total = 0;
+    cartItems.forEach((item) => {
+      total += item.price * item.quantity;
+    });
+    setTotalPrice(total);
+  }, [cartItems]);
+
+  const handleQuantityChange = (index, newQuantity) => {
+    const newItems = [...cartItems];
+    newItems[index].quantity = newQuantity;
+    setCartItems(newItems);
+    localStorage.setItem("cartItems", JSON.stringify(newItems));
   };
 
-  // this function will handle the delete the item from the cart
-  const removeItem = (id) => {
-    deleteTheDataFromCart(id)
-      .then((res) => {
-        toast({
-          title: "Item removed",
-          description: "Item is successfully removed from the cart.",
-          status: "success",
-          duration: 4000,
-          isClosable: true,
-        });
-        handleEffect();
-      })
-      .catch((err) => console.log(err));
-  };
-
-  // this function will handle the quantity change
-  const changeQty = (id, val) => {
-    patchTheQuantityOfCart(id, val)
-      .then((res) => {
-        handleEffect();
-      })
-      .catch((err) => console.log(err));
-  };
-
-  // this function will place the order
   const handlePlaceOrder = () => {
-    if (cartData.length === 0) {
-      toast({
-        title: "Cart in empty",
-        description: "Kindly Add the Product in you cart",
-        status: "warning",
-        duration: 4000,
-        isClosable: true,
-      });
-      return;
-    }
-    let order = {
-      userId: user,
-      products: cartData,
-      status: "Confirmed",
-    };
-    setButtonLoading(true);
-    placeOrder(order)
-      .then(async () => {
-        toast({
-          title: "Order Successfull",
-          description: "Your Order has been placed successfully",
-          status: "success",
-          duration: 4000,
-          isClosable: true,
-        });
-        await clearCart(0);
-        handleEffect();
-        navigate("/");
-      })
-      .catch((err) => {
-        console.log("hi");
-        toast({
-          title: "Order Failed",
-          description:
-            "Something went wrong with your order, Please try again!",
-          status: "error",
-          duration: 4000,
-          isClosable: true,
-        });
-      });
-  };
-  const clearCart = (ind) => {
-    if (cartData.length === ind) {
-      setButtonLoading(false);
-      return Promise.resolve("done");
-    }
-    deleteTheDataFromCart(cartData[ind].id)
-      .then((res) => {
-        clearCart(++ind);
-      })
-      .catch((err) => console.log(err));
+    setShowAlert(true);
+
+    localStorage.removeItem("cartItems");
+    setCartItems([]);
   };
 
   return (
-    <>
-      <Box px={useBreakpointValue({ base: "10px", md: "100px" })} py={"100px"}>
-        <Heading textAlign={"center"} color={"pink.400"} mb={"20px"}>
-          Your Bag
-        </Heading>
-        <Flex
-          direction={useBreakpointValue({ base: "column", md: "row" })}
-          gap={"30px"}
+    <Box width="100%" p="4">
+      <Heading size="md" mb="4">
+        My Cart
+      </Heading>
+      <Flex direction={"column"} width={"40%"} height={"30%"}>
+        {cartItems.map((item, index) => (
+          <Box
+            key={item.product}
+            mt={"20px"}
+            boxShadow={"rgba(0, 0, 0, 0.35) 0px 5px 15px"}
+            borderRadius={"20px"}
+          >
+            <Image src={item.image} alt={item.title} width={"20%"} />
+            <Text fontSize="md" fontWeight="semibold" noOfLines={1}>
+              {item.title}
+            </Text>
+            <Text fontSize="sm" color="gray.600" noOfLines={1}>
+              {item.description}
+            </Text>
+            <Text fontSize="md" fontWeight="semibold" mb="2">
+              {+item.price}
+            </Text>
+            <Box display="flex" alignItems="center">
+              <Button
+                size="sm"
+                variant="outline"
+                mr="2"
+                onClick={() => handleQuantityChange(index, item.quantity - 1)}
+                disabled={item.quantity <= 1}
+              >
+                -
+              </Button>
+              <Text fontSize="md" fontWeight="semibold">
+                {item.quantity}
+              </Text>
+              <Button
+                size="sm"
+                variant="outline"
+                ml="2"
+                onClick={() => handleQuantityChange(index, item.quantity + 1)}
+              >
+                +
+              </Button>
+            </Box>
+          </Box>
+        ))}
+      </Flex>
+      {cartItems.length > 0 ? (
+        <Box mt="4">
+          <Text fontSize="lg" fontWeight="bold" textAlign="right">
+            Total Price: {+totalPrice}
+          </Text>
+          <Center>
+            <Button mt="4" colorScheme="blue" onClick={handlePlaceOrder}>
+              Place Order
+            </Button>
+          </Center>
+        </Box>
+      ) : (
+        <Box
+          my="4"
+          textAlign="center"
+          boxShadow={"rgba(0, 0, 0, 0.35) 0px 5px 15px"}
+          borderRadius={"20px"}
+          mt={"30px"}
         >
-          {cartData.length === 0 ? (
-            <Center m="auto">
-              <Image src="/Images/emptycart.png" m="auto" w="500px" />
-            </Center>
-          ) : (
-            <>
-              <CartContainer
-                cartData={cartData}
-                removeItem={removeItem}
-                changeQty={changeQty}
-              />
-              <CartTotal
-                cartData={cartData}
-                handlePlaceOrder={handlePlaceOrder}
-                buttonLoading={buttonLoading}
-              />
-            </>
-          )}
-        </Flex>
-      </Box>
-    </>
+          Your cart is empty. <Link to="/">Start shopping now!</Link>
+        </Box>
+      )}
+      {showAlert && (
+        <Alert status="success" mt="4">
+          <AlertIcon />
+          Your order has been placed. Thank you for shopping with us!
+        </Alert>
+      )}
+    </Box>
   );
 };
 
-export default Cart;
+export default CartPage;

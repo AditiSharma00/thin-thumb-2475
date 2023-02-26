@@ -1,54 +1,33 @@
 import { Button } from "@chakra-ui/button";
 import { Image } from "@chakra-ui/image";
-import { Box, Center, HStack, Stack, Text } from "@chakra-ui/layout";
-import { useToast } from "@chakra-ui/react";
-import React from "react";
-import { SlHandbag } from "react-icons/sl";
+import { Box, Center, Stack, Text } from "@chakra-ui/layout";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { sendDataToCart } from "../../API/api";
-// import { AuthContext } from "../../Contexts/AuthContextProvider";
 import { useAuth } from "../../Contexts/AuthProvider";
-let dollarIndianLocale = Intl.NumberFormat("en-IN");
 
 const ProductCard = ({ data }) => {
   const user = useAuth();
-  // const { currentUser } = useContext(AuthContext);
-  const toast = useToast();
   const navigate = useNavigate();
+  const [cartMessage, setCartMessage] = useState("");
+
   const handleAddToCart = () => {
-    let obj = {
-      user: user,
-      product: data,
-      qty: 1,
-    };
-    if (user) {
-      sendDataToCart(obj)
-        .then((res) => {
-          toast({
-            title: "Item added To your cart",
-            description: "An item has been successfully added to your cart",
-            status: "success",
-            duration: 4000,
-            isClosable: true,
-          });
-        })
-        .catch((err) => {
-          toast({
-            title: "Error",
-            description: "Something went wrong try again letter",
-            status: "error",
-            duration: 4000,
-            isClosable: true,
-          });
-        });
+    if (user !== null) {
+      // User is logged in
+      const cartItems = JSON.parse(localStorage.getItem("cartItems")) || [];
+      const obj = {
+        product: data.id,
+        price: data.price,
+        title: data.title,
+        image: data.image,
+        description: data.description,
+        userEmail: user.email,
+      };
+      cartItems.push(obj);
+      localStorage.setItem("cartItems", JSON.stringify(cartItems));
+      setCartMessage("Item added to cart!");
     } else {
-      toast({
-        title: "Kindly Login",
-        description: "Kindly login before adding any product in your cart",
-        status: "info",
-        duration: 4000,
-        isClosable: true,
-      });
+      // User is not logged in
+      setCartMessage("Please log in to add to cart.");
       navigate("/login");
     }
   };
@@ -68,24 +47,23 @@ const ProductCard = ({ data }) => {
           <Text fontSize={"25px"} fontWeight={"bold"}>
             {data.title}
           </Text>
-          <Text color={"gray.600"} fontSize={"15px"} noOfLines={1}>
+          <Text color={"gray.600"} fontSize={"15px"} maxW={"100%"}>
             {data.description}
           </Text>
-          <Text color={"gray.600"} size={"md"} noOfLines={1}>
+          <Text color={"gray.600"} fontSize={"md"} maxW={"100%"}>
             {data.price}
           </Text>
-
           <Center>
             <Button
               variant="outline"
-              colorScheme="red"
+              color={"white"}
+              backgroundColor={"red.500"}
               w={"fit-content"}
               textAlign={"center"}
               p={1}
-              leftIcon={<SlHandbag />}
               onClick={handleAddToCart}
             >
-              Add to cart
+              {cartMessage ? cartMessage : "Add to cart"}
             </Button>
           </Center>
         </Stack>
